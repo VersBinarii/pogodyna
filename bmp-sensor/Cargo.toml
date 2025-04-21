@@ -14,10 +14,10 @@ embassy-net = { version = "0.6.0", features = [
   "dhcpv4",
   "medium-ethernet",
   "tcp",
-  "udp",
 ] }
 embedded-io = "0.6.1"
 embedded-io-async = "0.6.1"
+embassy-futures = { version = "0.1" }
 esp-alloc = "0.7.0"
 esp-hal = { version = "1.0.0-beta.0", features = [
   "defmt",
@@ -43,8 +43,7 @@ heapless = { version = "0.8.0", default-features = false }
 static_cell = { version = "2.1.0", features = ["nightly"] }
 # bme280 = { git = "https://github.com/VersBinarii/bme280-rs.git", features = ["async", "defmt"]}
 bme280 = { path = "../../bme280/", features = ["async", "defmt"]}
-serde = { version = "1.0", default-features = false }
-postcard = {version = "1.1", features = []}
+mqttrs = { path = "../../mqttrs/", default-features = false}
 
 [build-dependencies]
 dotenvy = "0.15"

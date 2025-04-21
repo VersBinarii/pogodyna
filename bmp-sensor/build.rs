@@ -5,7 +5,12 @@ fn main() {
     // make sure linkall.x is the last linker script (otherwise might cause problems with flip-link)
     println!("cargo:rustc-link-arg=-Tlinkall.x");
 
-    for var in ["SSID", "WIFI_KEY", "BASE_STATION_ADDRESS"] {
+    for var in [
+        "SSID",
+        "WIFI_KEY",
+        "BASE_STATION_ADDRESS",
+        "BASE_STATION_PORT",
+    ] {
         if let Ok(value) = std::env::var(var) {
             println!("cargo:rustc-env={}={}", var, value);
         }

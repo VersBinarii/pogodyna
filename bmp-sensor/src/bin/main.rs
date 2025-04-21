@@ -2,8 +2,7 @@
 #![no_main]
 
 use bme280::i2c::AsyncBME280;
-use bmp_sensor::SensorUpdate;
-use embedded_io_async::Write;
+use bmp_sensor::mqtt::{MqttClientState, MqttConnector};
 use core::net::Ipv4Addr;
 use defmt::{error, info};
 use embassy_net::{tcp::TcpSocket, Runner, StackResources};
@@ -15,6 +14,7 @@ use esp_hal::{
     i2c::master::{Config, I2c},
     rng::Rng,
 };
+use heapless::String;
 
 use embassy_executor::Spawner;
 use embassy_time::{Delay, Duration, Timer};
@@ -22,11 +22,13 @@ use esp_wifi::wifi::{
     ClientConfiguration, Configuration, WifiController, WifiDevice, WifiError, WifiEvent, WifiState,
 };
 use esp_wifi::EspWifiController;
-use postcard::to_slice;
+
+use bmp_sensor::mqtt::mqtt_client::MqttClient;
 
 const SSID: &str = env!("SSID");
 const WIFI_KEY: &str = env!("WIFI_KEY");
 const BASE_STATION_ADDRESS: &str = env!("BASE_STATION_ADDRESS");
+const BASE_STATION_PORT: &str = env!("BASE_STATION_PORT");
 
 #[panic_handler]
 fn panic(_: &core::panic::PanicInfo) -> ! {
@@ -109,31 +111,47 @@ async fn main(spawner: Spawner) {
     let mut rx_buffer = [0; 4096];
     let mut tx_buffer = [0; 4096];
     let mut socket = TcpSocket::new(stack, &mut rx_buffer, &mut tx_buffer);
-    socket.set_timeout(Some(embassy_time::Duration::from_secs(10)));
-    let remote_endpoint = (BASE_STATION_ADDRESS.parse::<Ipv4Addr>().unwrap(), 12345);
-    //Main loop
+    socket.set_timeout(Some(embassy_time::Duration::from_secs(5)));
+    let remote_endpoint = (
+        BASE_STATION_ADDRESS.parse::<Ipv4Addr>().unwrap(),
+        BASE_STATION_PORT.parse().unwrap(),
+    );
+    let mut _mqtt = MqttClient::new(socket, remote_endpoint, "outside-sensor");
+    info!("connecting...");
+    let _ = _mqtt.connect().await.unwrap();
+    let mut mqtt = MqttConnector {
+        state: MqttClientState::Connected,
+        client: _mqtt,
+    };
+    info!("connected!");
     loop {
-        info!("connecting...");
-        match socket.connect(remote_endpoint).await{
-            Err(e) =>{
-                error!("connect error: {:?}", e);
-            }
-            Ok(_)=>{
-                info!("connected!");
-
-                'sendupdate:loop{
-                    let measurement = bme280.measure(&mut Delay).await.unwrap();
-                    info!("Measurement: {}", measurement);
-                    let mut measurements_as_bytes = [0u8; 64];
-                    to_slice(&SensorUpdate::from(measurement), &mut measurements_as_bytes).unwrap(); 
-                    if let Err(e) = socket.write_all(&measurements_as_bytes).await{
-                        error!("Error sending update: {}", e);
-                        break 'sendupdate;
-                    }
-                    Timer::after(Duration::from_millis(3000)).await;
+        use core::fmt::Write;
+        if !mqtt.is_connected() {
+            loop {
+                if mqtt.reconnect().await.is_ok() {
+                    break;
+                } else {
+                    error!("Failed to reconnect");
                 }
+                Timer::after(Duration::from_millis(3000)).await;
             }
         }
+        let measurement = bme280.measure(&mut Delay).await.unwrap();
+        let mut buf: String<64> = String::new();
+        let _ = write!(
+            buf,
+            "{{\"t\":\"{}\",\"p\":\"{}\",\"h\":\"{}\"}}",
+            measurement.temperature, measurement.pressure, measurement.humidity
+        );
+
+        info!("trying to publish update");
+        if let Err(_) = mqtt
+            .publish("sensor/temperature", buf.trim().as_bytes())
+            .await
+        {
+            error!("Error while publishing update. Will try to reconnect...");
+        }
+
         Timer::after(Duration::from_millis(3000)).await;
     }
 }
