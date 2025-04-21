@@ -1,3 +1,0 @@
-[workspace]
-resolver = "2"
-members = ["bmp-sensor", "common", "base-station"]
