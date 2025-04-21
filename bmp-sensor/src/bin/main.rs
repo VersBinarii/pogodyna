@@ -2,9 +2,9 @@
 #![no_main]
 
 use bme280::i2c::AsyncBME280;
-use bmp_sensor::mqtt::{MqttClientState, MqttConnector};
+use bmp_sensor::mqtt::MqttConnector;
 use core::net::Ipv4Addr;
-use defmt::{error, info};
+use defmt::{debug, error, info};
 use embassy_net::{tcp::TcpSocket, Runner, StackResources};
 use esp_alloc as _;
 use esp_hal::timer::systimer::SystemTimer;
@@ -22,8 +22,6 @@ use esp_wifi::wifi::{
     ClientConfiguration, Configuration, WifiController, WifiDevice, WifiError, WifiEvent, WifiState,
 };
 use esp_wifi::EspWifiController;
-
-use bmp_sensor::mqtt::mqtt_client::MqttClient;
 
 const SSID: &str = env!("SSID");
 const WIFI_KEY: &str = env!("WIFI_KEY");
@@ -79,17 +77,14 @@ async fn main(spawner: Spawner) {
     spawner.spawn(connection(controller)).ok();
     spawner.spawn(net_task(runner)).ok();
 
-    info!("Initilizeing i2c");
     let i2c_driver = I2c::new(peripherals.I2C0, Config::default())
         .unwrap()
         .into_async()
         .with_sda(peripherals.GPIO5)
         .with_scl(peripherals.GPIO6);
     let mut bme280 = AsyncBME280::new_primary(i2c_driver);
-    info!("Initializing BME");
-    match bme280.init(&mut Delay).await {
-        Ok(_) => info!("Init ok"),
-        Err(e) => error!("Error: {:?}", e),
+    if let Err(e) = bme280.init(&mut Delay).await {
+        error!("Error initializing BME: {:?}", e);
     }
 
     loop {
@@ -100,7 +95,6 @@ async fn main(spawner: Spawner) {
         Timer::after(Duration::from_millis(500)).await;
     }
 
-    info!("Waiting to get IP address...");
     loop {
         if let Some(config) = stack.config_v4() {
             info!("Got IP: {}", config.address);
@@ -111,24 +105,18 @@ async fn main(spawner: Spawner) {
     let mut rx_buffer = [0; 4096];
     let mut tx_buffer = [0; 4096];
     let mut socket = TcpSocket::new(stack, &mut rx_buffer, &mut tx_buffer);
-    socket.set_timeout(Some(embassy_time::Duration::from_secs(5)));
+    socket.set_timeout(Some(embassy_time::Duration::from_secs(10)));
     let remote_endpoint = (
         BASE_STATION_ADDRESS.parse::<Ipv4Addr>().unwrap(),
         BASE_STATION_PORT.parse().unwrap(),
-    );
-    let mut _mqtt = MqttClient::new(socket, remote_endpoint, "outside-sensor");
-    info!("connecting...");
-    let _ = _mqtt.connect().await.unwrap();
-    let mut mqtt = MqttConnector {
-        state: MqttClientState::Connected,
-        client: _mqtt,
-    };
-    info!("connected!");
+    )
+        .into();
+    let mut mqtt = MqttConnector::new(socket, remote_endpoint, "outside_sensor");
     loop {
         use core::fmt::Write;
         if !mqtt.is_connected() {
             loop {
-                if mqtt.reconnect().await.is_ok() {
+                if mqtt.connect().await.is_ok() {
                     break;
                 } else {
                     error!("Failed to reconnect");
@@ -144,12 +132,8 @@ async fn main(spawner: Spawner) {
             measurement.temperature, measurement.pressure, measurement.humidity
         );
 
-        info!("trying to publish update");
-        if let Err(_) = mqtt
-            .publish("sensor/temperature", buf.trim().as_bytes())
-            .await
-        {
-            error!("Error while publishing update. Will try to reconnect...");
+        if let Err(_) = mqtt.publish("sensor/update", buf.trim().as_bytes()).await {
+            error!("Error while publishing update.");
         }
 
         Timer::after(Duration::from_millis(3000)).await;
@@ -165,7 +149,7 @@ async fn net_task(mut runner: Runner<'static, WifiDevice<'static>>) {
 async fn connection(mut controller: WifiController<'static>) {
     loop {
         if esp_wifi::wifi::wifi_state() == WifiState::StaConnected {
-            info!("We're connected - waiting for disconnection");
+            debug!("We're connected - waiting for disconnection");
             controller.wait_for_event(WifiEvent::StaDisconnected).await;
             Timer::after(Duration::from_millis(5000)).await
         }
@@ -176,14 +160,13 @@ async fn connection(mut controller: WifiController<'static>) {
                 ..Default::default()
             });
             controller.set_configuration(&client_config).unwrap();
-            info!("Starting wifi");
             controller.start_async().await.unwrap();
-            info!("Wifi started!");
+            debug!("Wifi started!");
         }
         info!("About to connect...");
 
         match controller.connect_async().await {
-            Ok(_) => info!("Wifi connected!"),
+            Ok(_) => debug!("Wifi connected!"),
             Err(e) => {
                 info!("Failed to connect to wifi");
                 match e {

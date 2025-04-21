@@ -1,25 +1,32 @@
+use embassy_net::{tcp::TcpSocket, IpEndpoint};
 use mqtt_client::MqttClient;
 
 use crate::error::SensorError;
 
-pub mod mqtt_client;
+mod mqtt_client;
 
-pub enum MqttClientState {
+enum MqttClientState {
     Disconnected,
     Connected,
 }
 
 pub struct MqttConnector<'a> {
-    pub state: MqttClientState,
-    pub client: MqttClient<'a>,
+    state: MqttClientState,
+    client: MqttClient<'a>,
 }
 
 impl<'a> MqttConnector<'a> {
+    pub fn new(socket: TcpSocket<'a>, remote_endpoint: IpEndpoint, sensor_id: &str) -> Self {
+        Self {
+            client: MqttClient::new(socket, remote_endpoint, sensor_id),
+            state: MqttClientState::Disconnected,
+        }
+    }
     pub fn is_connected(&self) -> bool {
         matches!(self.state, MqttClientState::Connected)
     }
 
-    pub async fn reconnect(&mut self) -> Result<(), SensorError> {
+    pub async fn connect(&mut self) -> Result<(), SensorError> {
         match &mut self.state {
             MqttClientState::Disconnected => {
                 let _ = self.client.connect().await?;
