@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "INSERT INTO sensor_readings (sensor_id, timestamp, temperature, pressure, humidity) \n        VALUES (?,?,?,?,?)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 5
+    },
+    "nullable": []
+  },
+  "hash": "edec437497ed6bb11795c7d9d3dd16e19b3a9491d6a71e4bbad0113c91f0ebb5"
+}

@@ -12,4 +12,8 @@ pub enum BsError {
     Config(#[from] dotenvy::Error),
     #[error("Threading error: {0}")]
     Threading(#[from] tokio::task::JoinError),
+    #[error("Repository error: {0}")]
+    Database(#[from] sqlx::Error),
+    #[error("Database migration error: {0}")]
+    Migrations(#[from] sqlx::migrate::MigrateError),
 }
