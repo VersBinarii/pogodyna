@@ -58,7 +58,7 @@ impl<'a> MqttClient<'a> {
         match encode_slice(&packet, &mut buf) {
             Err(e) => {
                 log_mqtt_error(e);
-                return Err(SensorError::Protocol);
+                Err(SensorError::Protocol)
             }
             Ok(packet_size) => match self.socket.write_all(&buf[..packet_size]).await {
                 Ok(_) => Ok(()),
@@ -68,8 +68,7 @@ impl<'a> MqttClient<'a> {
     }
 
     pub async fn disconnect(&mut self) -> Result<(), SensorError> {
-        let _ = self
-            .socket
+        self.socket
             .flush()
             .await
             .map_err(|_| SensorError::Network)?;
@@ -115,7 +114,7 @@ async fn inner_connect(
                 Ok(bytes) => bytes,
             };
 
-            if let Err(_) = socket.write_all(&buf[..encoded_bytes]).await {
+            if socket.write_all(&buf[..encoded_bytes]).await.is_err() {
                 return Err(SensorError::Network);
             }
             // CONNACK is small (2-byte fixed header + 2-byte variable header)
