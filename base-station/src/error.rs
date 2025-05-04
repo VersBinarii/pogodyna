@@ -8,4 +8,8 @@ pub enum BsError {
     Protocol(String),
     #[error("Processing timeout")]
     Timeout,
+    #[error("Config parsing error: {0}")]
+    Config(#[from] dotenvy::Error),
+    #[error("Threading error: {0}")]
+    Threading(#[from] tokio::task::JoinError),
 }

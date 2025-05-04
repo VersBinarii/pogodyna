@@ -1,9 +1,14 @@
-use base_station::{db::SqliteRepository, mqtt::MqttClient};
+
+use base_station::{db::SqliteRepository, error::BsError, mqtt::MqttClient};
 use sqlx::SqlitePool;
 
 #[tokio::main]
-async fn main() {
-    let broker_addr = "192.168.1.200:1883".parse().unwrap();
+async fn main() -> Result<(), BsError> {
+    dotenvy::from_filename("../.env").ok();
+
+    let broker_ip = dotenvy::var("BASE_STATION_ADDRESS")?;
+    let broker_port = dotenvy::var("BASE_STATION_PORT")?;
+    let broker_addr = format!("{broker_ip}:{broker_port}").parse().unwrap();
     let db_pool = SqlitePool::connect("").await.unwrap();
     let repository = SqliteRepository::new(db_pool);
     let (mqtt_client, handle) =
@@ -17,5 +22,6 @@ async fn main() {
         eprintln!("Error sending subscribe: {}", e);
     }
 
-    handle.await.unwrap();
+    handle.await?;
+    Ok(())
 }
