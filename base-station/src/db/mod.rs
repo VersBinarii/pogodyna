@@ -31,7 +31,7 @@ impl Repository for SqliteRepository {
         Box::pin(async move {
             sqlx::query!(
             "INSERT INTO sensor_readings (sensor_id, timestamp, temperature, pressure, humidity) 
-        VALUES (?,?,?,?,?)",
+                VALUES (?,?,?,?,?)",
             reading.sensor_id,
             reading.timestamp,
             reading.temperature,
