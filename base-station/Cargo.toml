@@ -11,7 +11,7 @@ path = "./src/bin/main.rs"
 chrono = {version = "0.4", features = ["serde"]}
 dotenvy = {version = "0.15"}
 poem = {version = "3.1"}
-poem-openapi = { version = "5.1", features = ["swagger-ui"] }
+poem-openapi = { version = "5.1", features = ["swagger-ui", "chrono"] }
 serde = { version = "1.0" }
 serde_json = {version = "1.0"}
 sqlx = { version = "0.8.5", features = ["runtime-tokio", "sqlite", "chrono"]}
