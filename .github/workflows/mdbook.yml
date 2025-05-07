@@ -3,6 +3,8 @@ name: mdBook Deploy
 on:
   push:
     branches: [master]
+    paths:
+      - "spec/docs/src/**"
 
 jobs:
   build:

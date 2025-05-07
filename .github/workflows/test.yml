@@ -3,6 +3,9 @@ name: Rust CI
 on:
   push:
     branches: [master]
+    paths:
+      - "src/**"
+      - "tests/**"
   pull_request:
     branches: [master]
 
@@ -29,6 +32,6 @@ jobs:
 
       - name: Run tests
         env:
-          DATABASE_UR: "sqlite::memory:?cache=shared"
+          DATABASE_URL: "sqlite::memory:?cache=shared"
         working-directory: base-station
         run: cargo test --all
