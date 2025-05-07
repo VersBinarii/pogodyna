@@ -22,5 +22,5 @@ tracing-appender = "0.2"
 tracing-bunyan-formatter = "0.3"
 tracing-subscriber = {version = "0.3", features = ["env-filter"]}
 
-mqttrs = { path = "../../mqttrs/" }
+mqttrs = { git = "https://github.com/VersBinarii/mqttrs.git" }
 
