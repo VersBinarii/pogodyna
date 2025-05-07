@@ -9,4 +9,5 @@ command = "mdbook-mermaid"
 [output]
 
 [output.html]
+site-url = "/pogodyna/"
 additional-js = ["mermaid.min.js", "mermaid-init.js"]
