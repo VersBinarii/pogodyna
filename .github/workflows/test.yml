@@ -4,9 +4,9 @@ on:
   push:
     branches: [master]
     paths:
-      - "src/**"
-      - "tests/**"
-      - "Cargo.toml"
+      - "base-station/src/**"
+      - "base-station/tests/**"
+      - "base-station/Cargo.toml"
   pull_request:
     branches: [master]
 
