@@ -1,4 +1,4 @@
-use base_station::{api::WeatherApi, db::SqliteRepository, error::BsError, mqtt::MqttClient};
+use base_station::{api::EnvironmentApi, db::SqliteRepository, error::BsError, mqtt::MqttClient};
 use poem::{Route, Server, listener::TcpListener};
 use poem_openapi::OpenApiService;
 use sqlx::SqlitePool;
@@ -44,7 +44,7 @@ async fn main() -> Result<(), BsError> {
     mqtt_client.wait_for_server_setup().await;
 
     let api_service =
-        OpenApiService::new(WeatherApi, "Hello World", "1.0").server("http://localhost:3000");
+        OpenApiService::new(EnvironmentApi, "Environment Api", "1.0").server("http://localhost:3000");
     let ui = api_service.swagger_ui();
     let app = Route::new().nest("/", api_service).nest("/meta/swagger", ui);
 

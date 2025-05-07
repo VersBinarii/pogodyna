@@ -1,6 +1,9 @@
 use poem_openapi::OpenApi;
 
-pub struct WeatherApi;
+mod env_api_response;
+
+pub struct EnvironmentApi;
 
 #[OpenApi]
-impl WeatherApi {}
+impl EnvironmentApi {
+}
