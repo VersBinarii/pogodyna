@@ -15,7 +15,7 @@ jobs:
     runs-on: ubuntu-latest
 
     env:
-      DATABASE_URL: "sqlite://testing/test.db"
+      DATABASE_URL: "sqlite://./testing/test.db"
     steps:
       - uses: actions/checkout@v4
       - name: Install Rust
@@ -35,8 +35,11 @@ jobs:
 
       - name: Set up SQLite directory
         run: |
-          mkdir -p ./testing  # Create the directory for the database file
-          touch ./testing/test.db  # Ensure the DB file is created
+          mkdir -p ./testing
+          touch ./testing/test.db
+
+      - name: List files
+        run: ls -R
 
       - name: Run tests
         working-directory: base-station
