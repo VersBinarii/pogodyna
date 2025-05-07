@@ -28,5 +28,7 @@ jobs:
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
 
       - name: Run tests
+        env:
+          DATABASE_UR: "sqlite::memory:?cache=shared"
         working-directory: base-station
         run: cargo test --all
