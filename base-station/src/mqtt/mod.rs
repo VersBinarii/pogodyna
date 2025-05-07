@@ -15,6 +15,7 @@ use tokio::sync::{Mutex, Notify};
 mod packets;
 mod read_loop;
 
+#[derive(Debug, PartialEq)]
 pub enum ReadLoopResult {
     Ok,
     Skipped,

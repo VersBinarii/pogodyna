@@ -1,5 +1,6 @@
 use chrono::Utc;
 
+pub mod api;
 pub mod db;
 pub mod error;
 pub mod mqtt;
@@ -52,7 +53,7 @@ mod from_string_or_float {
         enum FloatOrString {
             String(String),
             Float(f64),
-            Number(i64)
+            Number(i64),
         }
         let maybe_value: Option<FloatOrString> = Option::deserialize(deserializer)?;
         match maybe_value {
