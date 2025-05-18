@@ -178,7 +178,39 @@
 <p>A little DIY weather station.</p>
 <p>This is a very much work in progress.</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="installation"><a class="header" href="#installation">Installation</a></h1>
+<h2 id="base-station"><a class="header" href="#base-station">Base station</a></h2>
+<pre><code class="language-bash">cargo install --git https://github.com/VersBinarii/pogodyna.git
+</code></pre>
+<h2 id="mqtt-broker"><a class="header" href="#mqtt-broker">MQTT Broker</a></h2>
+<p>Eventually we will want this system to work with any 
+MQTT broker but for now its tested only with <a href="https://github.com/eclipse-mosquitto/mosquitto">Mosquittto</a></p>
+<pre><code class="language-bash">sudo pacman -S mosquitto
+</code></pre>
+<h2 id="sensor"><a class="header" href="#sensor">Sensor</a></h2>
+<p>For now the sensor needs to be build and flashed with the 
+<a href="installation/../../../../bmp-sensor/">bmp-sensor</a> firmware.</p>
+<h2 id="configuration"><a class="header" href="#configuration">Configuration</a></h2>
+<p>Following is the example configuration required for building the base-station and the sensor:</p>
+<pre><code class="language-bash">SSID=my_home_wifi
+WIFI_KEY=my_home_wifi_password
+BASE_STATION_ADDRESS=192.168.1.200
+BASE_STATION_PORT=1883
+DATABASE_URL=&quot;sqlite://sensor_readings.db&quot;
+LOG_DIRECTORY=&quot;./logs/basestation&quot;
+RUST_LOG=debug,sqlx=info
+</code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="architecture"><a class="header" href="#architecture">Architecture</a></h1>
+<h2 id="system-elements"><a class="header" href="#system-elements">System elements</a></h2>
+<pre><code class="language-mermaid">sequenceDiagram;
+    participant ws as website;
+    participant bs as base-station;
+    participant br as MQTT Broker;
+    participant sen as Sensor;
+    
+    ws-&gt;&gt;bs: API request;
+    bs-&gt;&gt;br: Topic subscription;
+    sen-&gt;&gt;br: Sensor updates;
+</code></pre>
 
                     </main>
 
