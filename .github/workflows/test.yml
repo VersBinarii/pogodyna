@@ -39,7 +39,7 @@ jobs:
           echo $DATABASE_URL
 
       - name: List files
-        run: ls -R
+        run: ls -aR
 
       - name: Run tests
         working-directory: base-station
