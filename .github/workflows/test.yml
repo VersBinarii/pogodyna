@@ -3,10 +3,10 @@ name: Rust CI
 on:
   push:
     branches: [master]
-    # paths:
-    #   - "base-station/src/**"
-    #   - "base-station/tests/**"
-    #   - "base-station/Cargo.toml"
+    paths:
+      - "base-station/src/**"
+      - "base-station/tests/**"
+      - "base-station/Cargo.toml"
   pull_request:
     branches: [master]
 
@@ -36,10 +36,6 @@ jobs:
       - name: Set up SQLite directory
         run: |
           mkdir -p base-station/testing && touch base-station/testing/test.db
-          echo $DATABASE_URL
-
-      - name: List files
-        run: ls -aR
 
       - name: Install sqlx-cli
         run: cargo install sqlx-cli --no-default-features --features sqlite
