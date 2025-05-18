@@ -24,15 +24,17 @@ pub fn parse_connack(buf: &[u8]) -> bool {
     buf.len() == 4 && buf[0] == 0x20 && buf[1] == 0x02 && buf[3] == 0x00
 }
 
-pub fn build_subscribe_packet(topic: &str) -> Result<Vec<u8>, BsError> {
-    let subscribe_topic = SubscribeTopic {
+pub fn build_subscribe_packet(topics: &[&str]) -> Result<Vec<u8>, BsError> {
+    let subscribe_topics = topics.iter().map(|&topic|{
+        SubscribeTopic {
         topic_path: String::from(topic),
         qos: mqttrs::QoS::AtMostOnce,
-    };
-    let topics = vec![subscribe_topic];
+        }
+    }).collect();
+
     let packet: Packet = Subscribe {
         pid: Pid::default(),
-        topics,
+        topics: subscribe_topics,
     }
     .into();
     let mut buf = [0u8; 64];

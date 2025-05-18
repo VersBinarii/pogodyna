@@ -13,10 +13,10 @@ pub async fn handle_packet(
         match decode_slice(packet) {
             Ok(Some(Packet::Publish(publish))) => {
                 let sensor_reading: SensorReading =
-                    serde_json::from_slice(publish.payload).unwrap();
+                    serde_json::from_slice(publish.payload)?;
                 debug!("Got update: {sensor_reading}");
                 repository
-                    .insert_sensor_reading(sensor_reading)
+                    .insert_sensor_reading(publish.topic_name.to_string(), sensor_reading)
                     .await
                     .map(|_| ReadLoopResult::Ok)
             }

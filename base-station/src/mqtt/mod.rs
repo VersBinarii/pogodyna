@@ -133,7 +133,7 @@ where
         let mut buf = [0u8; 2048];
 
         debug!("sending subscription");
-        if let Err(e) = self.subscribe("sensor/update").await {
+        if let Err(e) = self.subscribe(&["sensor/update"]).await {
             error!("Error sending subscribe: {}", e);
             return Err(e);
         }
@@ -159,7 +159,7 @@ where
         self.connected_notify.notified().await;
     }
 
-    pub async fn subscribe(&self, topic: &str) -> Result<(), BsError> {
+    pub async fn subscribe(&self, topic: &[&str]) -> Result<(), BsError> {
         let packet = build_subscribe_packet(topic)?;
         if let Some(ref mut writer) = *self.writer.lock().await {
             writer.write_all(&packet).await?;

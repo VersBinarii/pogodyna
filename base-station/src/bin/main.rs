@@ -36,6 +36,7 @@ async fn main() -> Result<(), BsError> {
     let db_pool = SqlitePool::connect(&sqlite_db_file).await?;
 
     sqlx::migrate!("./migrations").run(&db_pool).await?;
+
     let repository = SqliteRepository::new(db_pool);
     let (mqtt_client, handle) =
         MqttClient::run_forever(broker_addr, "base-station".to_string(), repository).await;

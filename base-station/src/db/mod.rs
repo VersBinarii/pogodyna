@@ -7,6 +7,7 @@ use crate::{SensorReading, error::BsError};
 pub trait Repository: Send + Sync {
     fn insert_sensor_reading(
         &self,
+        topic: String,
         sensor_reading: SensorReading,
     ) -> Pin<Box<dyn Future<Output = Result<(), BsError>> + Send>>;
 }
@@ -25,14 +26,16 @@ impl SqliteRepository {
 impl Repository for SqliteRepository {
     fn insert_sensor_reading(
         &self,
+        topic: String,
         reading: SensorReading,
     ) -> Pin<Box<dyn Future<Output = Result<(), BsError>> + Send>> {
         let pool = self.pool.clone();
         Box::pin(async move {
             sqlx::query!(
-            "INSERT INTO sensor_readings (sensor_id, timestamp, temperature, pressure, humidity) 
-                VALUES (?,?,?,?,?)",
+            "INSERT INTO sensor_readings (sensor_id, topic, timestamp, temperature, pressure, humidity) 
+                VALUES (?,?,?,?,?,?)",
             reading.sensor_id,
+            topic,
             reading.timestamp,
             reading.temperature,
             reading.pressure,
