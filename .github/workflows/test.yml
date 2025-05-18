@@ -41,6 +41,13 @@ jobs:
       - name: List files
         run: ls -aR
 
+      - name: Install sqlx-cli
+        run: cargo install sqlx-cli --no-default-features --features sqlite
+
+      - name: Run migrations
+        working-directory: base-station
+        run: sqlx migrate run
+
       - name: Run tests
         working-directory: base-station
         run: cargo test --all
