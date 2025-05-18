@@ -52,7 +52,7 @@ mod tests {
         0x68, 0x22, 0x3A, 0x22, 0x32, 0x33, 0x2E, 0x33, 0x33, 0x33, 0x33, 0x22, 0x7D,
     ];
 
-    #[sqlx::test(migrations = "./migrations")]
+    #[sqlx::test(migrations = "./migrations/")]
     async fn handle_valid_publish_packet(pool: SqlitePool) {
         let repo = SqliteRepository::new(pool.clone());
         let res = handle_packet(&repo, &MQTT_PUBLISH_PACKET).await;

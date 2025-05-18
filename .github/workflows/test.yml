@@ -36,6 +36,7 @@ jobs:
       - name: Set up SQLite directory
         run: |
           mkdir -p base-station/testing && touch base-station/testing/test.db
+          echo $DATABASE_URL
 
       - name: List files
         run: ls -R
