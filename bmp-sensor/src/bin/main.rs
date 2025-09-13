@@ -61,7 +61,7 @@ async fn main(spawner: Spawner) {
     let timer1 = TimerGroup::new(peripherals.TIMG0);
     let esp_wifi_ctrl = mk_static!(
         EspWifiController<'static>,
-        esp_wifi::init(timer1.timer0, rng, peripherals.RADIO_CLK).unwrap()
+        esp_wifi::init(timer1.timer0, rng).unwrap()
     );
     let (controller, interfaces) = esp_wifi::wifi::new(esp_wifi_ctrl, peripherals.WIFI).unwrap();
     let config = embassy_net::Config::dhcpv4(Default::default());
@@ -80,8 +80,8 @@ async fn main(spawner: Spawner) {
     let i2c_driver = I2c::new(peripherals.I2C0, Config::default())
         .unwrap()
         .into_async()
-        .with_sda(peripherals.GPIO5)
-        .with_scl(peripherals.GPIO6);
+        .with_sda(peripherals.GPIO4)
+        .with_scl(peripherals.GPIO5);
     let mut bme280 = AsyncBME280::new_primary(i2c_driver);
     if let Err(e) = bme280.init(&mut Delay).await {
         error!("Error initializing BME: {:?}", e);
@@ -92,7 +92,7 @@ async fn main(spawner: Spawner) {
         if stack.is_link_up() {
             break;
         }
-        Timer::after(Duration::from_millis(500)).await;
+        Timer::after(Duration::from_millis(1000)).await;
     }
 
     loop {
@@ -100,7 +100,7 @@ async fn main(spawner: Spawner) {
             info!("Got IP: {}", config.address);
             break;
         }
-        Timer::after(Duration::from_millis(500)).await;
+        Timer::after(Duration::from_millis(1000)).await;
     }
     let mut rx_buffer = [0; 4096];
     let mut tx_buffer = [0; 4096];
@@ -155,8 +155,8 @@ async fn connection(mut controller: WifiController<'static>) {
         }
         if !matches!(controller.is_started(), Ok(true)) {
             let client_config = Configuration::Client(ClientConfiguration {
-                ssid: SSID.try_into().unwrap(),
-                password: WIFI_KEY.try_into().unwrap(),
+                ssid: SSID.into(),
+                password: WIFI_KEY.into(),
                 ..Default::default()
             });
             controller.set_configuration(&client_config).unwrap();
@@ -175,6 +175,7 @@ async fn connection(mut controller: WifiController<'static>) {
                     WifiError::NotInitialized => error!("Not Initialized"),
                     WifiError::UnknownWifiMode => error!("Unknown WIFI mode"),
                     WifiError::InternalError(_) => error!("Internal error"),
+                    _ => error!("Unknown error"),
                 }
                 Timer::after(Duration::from_millis(5000)).await
             }
