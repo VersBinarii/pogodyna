@@ -1,3 +1,13 @@
+## 0.2.1 (2025-09-16)
+
+### Fix
+
+- Migrate to esp32c3
+
+### Refactor
+
+- Wifi code cleanup
+
 ## 0.2.0 (2025-05-18)
 
 ### Feat
