@@ -2,3 +2,5 @@
 
 pub mod error;
 pub mod mqtt;
+
+pub mod wifi;

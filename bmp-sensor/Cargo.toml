@@ -39,6 +39,7 @@ static_cell = { version = "2.1.0", features = ["nightly"] }
 # bme280 = { git = "https://github.com/VersBinarii/bme280-rs.git", features = ["async", "defmt"]}
 bme280 = { path = "../../bme280/", features = ["async", "defmt"]}
 mqttrs = { path = "../../mqttrs/", default-features = false}
+embedded-hal-bus = { version="0.3.0", features = ["alloc", "defmt-03", "async"]}
 
 [build-dependencies]
 dotenvy = "0.15"
