@@ -6,18 +6,26 @@ use bmp_sensor::mqtt::MqttConnector;
 use bmp_sensor::wifi::{setup_wifi, wifi_connection};
 use core::net::Ipv4Addr;
 use defmt::{error, info};
+use embassy_embedded_hal::shared_bus::asynch::i2c::I2cDevice;
 use embassy_net::{tcp::TcpSocket, Runner};
+use embassy_sync::blocking_mutex::raw::NoopRawMutex;
+use embassy_sync::mutex::Mutex;
 use esp_alloc as _;
 use esp_hal::timer::systimer::SystemTimer;
+use esp_hal::Async;
 use esp_hal::{
     clock::CpuClock,
     i2c::master::{Config, I2c},
 };
 use heapless::String;
+use sgp40::AsyncSgp40;
+use static_cell::StaticCell;
 
 use embassy_executor::Spawner;
 use embassy_time::{Delay, Duration, Timer};
 use esp_wifi::wifi::{WifiController, WifiDevice};
+
+static I2C_BUS: StaticCell<Mutex<NoopRawMutex, I2c<'_, Async>>> = StaticCell::new();
 
 const BASE_STATION_ADDRESS: &str = env!("BASE_STATION_ADDRESS");
 const BASE_STATION_PORT: &str = env!("BASE_STATION_PORT");
@@ -76,16 +84,21 @@ async fn main(spawner: Spawner) {
         .into();
     let mut mqtt = MqttConnector::new(socket, remote_endpoint, "outside_sensor");
 
-    let i2c_driver = I2c::new(peripherals.I2C0, Config::default())
+    let i2c = I2c::new(peripherals.I2C0, Config::default())
         .unwrap()
         .into_async()
         .with_sda(peripherals.GPIO4)
         .with_scl(peripherals.GPIO5);
+    let i2c_driver = I2C_BUS.init(Mutex::new(i2c));
+    let i2c_bme = I2cDevice::new(i2c_driver);
 
-    let mut bme280 = AsyncBME280::new_primary(i2c_driver);
+    let mut bme280 = AsyncBME280::new_primary(i2c_bme);
     if let Err(e) = bme280.init(&mut Delay).await {
         error!("Error initializing BME: {:?}", e);
     }
+
+    let i2c_sgp = I2cDevice::new(i2c_driver);
+    let mut sgp40 = AsyncSgp40::new(i2c_sgp, 0x59, Delay);
     loop {
         use core::fmt::Write;
         if !mqtt.is_connected() {
@@ -106,11 +119,28 @@ async fn main(spawner: Spawner) {
             measurement.temperature, measurement.pressure, measurement.humidity
         );
 
+        info!("{}", buf);
+
+        match sgp40
+            .measure_voc_index_with_rht(50000, (measurement.temperature * 1000.0) as i16)
+            .await
+        {
+            Ok(index) => info!("index: {}", index),
+            Err(err) => {
+                use sgp40::Error as SgError;
+                match err {
+                    SgError::I2c(e) => error!("I2C error: {:?}", e),
+                    SgError::Crc => error!("CRC validation error"),
+                    _ => error!("Self test error"),
+                }
+            }
+        }
+
         if let Err(e) = mqtt.publish("sensor/update", buf.trim().as_bytes()).await {
             error!("Error while publishing update: {}", e);
         }
 
-        Timer::after(Duration::from_millis(3000)).await;
+        Timer::after(Duration::from_millis(1000)).await;
     }
 }
 
