@@ -2,6 +2,7 @@
 #![no_main]
 
 use bme280::i2c::AsyncBME280;
+use bmp_sensor::lcd::initialize_display;
 use bmp_sensor::mqtt::MqttConnector;
 use bmp_sensor::wifi::{setup_wifi, wifi_connection};
 use core::net::Ipv4Addr;
@@ -12,10 +13,10 @@ use embassy_sync::blocking_mutex::raw::NoopRawMutex;
 use embassy_sync::mutex::Mutex;
 use esp_alloc as _;
 use esp_hal::timer::systimer::SystemTimer;
-use esp_hal::Async;
 use esp_hal::{
     clock::CpuClock,
     i2c::master::{Config, I2c},
+    Async,
 };
 use heapless::String;
 use sgp40::AsyncSgp40;
@@ -49,6 +50,14 @@ async fn main(spawner: Spawner) {
     esp_hal_embassy::init(timer0.alarm0);
 
     info!("Embassy initialized!");
+    let display = initialize_display(
+        peripherals.SPI2,
+        peripherals.GPIO6,
+        peripherals.GPIO7,
+        peripherals.GPIO8,
+        peripherals.GPIO9,
+        peripherals.GPIO10,
+    );
 
     let (controller, stack, runner) =
         setup_wifi(peripherals.WIFI, peripherals.RNG, peripherals.TIMG0)
@@ -84,11 +93,12 @@ async fn main(spawner: Spawner) {
         .into();
     let mut mqtt = MqttConnector::new(socket, remote_endpoint, "outside_sensor");
 
+    let bme_sda = peripherals.GPIO5;
     let i2c = I2c::new(peripherals.I2C0, Config::default())
         .unwrap()
         .into_async()
-        .with_sda(peripherals.GPIO4)
-        .with_scl(peripherals.GPIO5);
+        .with_sda(bme_sda)
+        .with_scl(peripherals.GPIO4);
     let i2c_driver = I2C_BUS.init(Mutex::new(i2c));
     let i2c_bme = I2cDevice::new(i2c_driver);
 
@@ -99,6 +109,7 @@ async fn main(spawner: Spawner) {
 
     let i2c_sgp = I2cDevice::new(i2c_driver);
     let mut sgp40 = AsyncSgp40::new(i2c_sgp, 0x59, Delay);
+
     loop {
         use core::fmt::Write;
         if !mqtt.is_connected() {
@@ -120,7 +131,6 @@ async fn main(spawner: Spawner) {
         );
 
         info!("{}", buf);
-
         match sgp40
             .measure_voc_index_with_rht(50000, (measurement.temperature * 1000.0) as i16)
             .await

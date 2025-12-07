@@ -42,6 +42,8 @@ static_cell = { version = "2.1.0", features = ["nightly"] }
 bme280 = { path = "../../bme280/", features = ["async", "defmt"]}
 mqttrs = { path = "../../mqttrs/", default-features = false}
 sgp40 = { path = "../../sgp40-rs/", features = ["async", "voc_index"] }
+st7735-lcd = { version = "0.10", features = ["graphics"] }
+embedded-graphics = {version = "0.8.1"}
 
 [build-dependencies]
 dotenvy = "0.15"
