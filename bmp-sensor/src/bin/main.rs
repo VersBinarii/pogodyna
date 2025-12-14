@@ -2,7 +2,7 @@
 #![no_main]
 
 use bme280::i2c::AsyncBME280;
-use bmp_sensor::lcd::initialize_display;
+use bmp_sensor::lcd::Lcd;
 use bmp_sensor::mqtt::MqttConnector;
 use bmp_sensor::wifi::{setup_wifi, wifi_connection};
 use core::net::Ipv4Addr;
@@ -50,14 +50,15 @@ async fn main(spawner: Spawner) {
     esp_hal_embassy::init(timer0.alarm0);
 
     info!("Embassy initialized!");
-    let display = initialize_display(
+    let display = Lcd::initialize_display(
         peripherals.SPI2,
         peripherals.GPIO6,
         peripherals.GPIO7,
         peripherals.GPIO8,
         peripherals.GPIO9,
         peripherals.GPIO10,
-    );
+    )
+    .unwrap();
 
     let (controller, stack, runner) =
         setup_wifi(peripherals.WIFI, peripherals.RNG, peripherals.TIMG0)
@@ -135,7 +136,10 @@ async fn main(spawner: Spawner) {
             .measure_voc_index_with_rht(50000, (measurement.temperature * 1000.0) as i16)
             .await
         {
-            Ok(index) => info!("index: {}", index),
+            Ok(index) => {
+                // display.
+                info!("index: {}", index)
+            }
             Err(err) => {
                 use sgp40::Error as SgError;
                 match err {
