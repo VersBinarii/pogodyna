@@ -17,5 +17,7 @@ pub enum BsError {
     #[error("Database migration error: {0}")]
     Migrations(#[from] sqlx::migrate::MigrateError),
     #[error("Serialization error: {0}")]
-    Serialization(#[from] serde_json::Error)
+    Serialization(#[from] serde_json::Error),
+    #[error("Error: {0}")]
+    Other(String)
 }

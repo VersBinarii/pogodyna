@@ -6,7 +6,7 @@ pub mod error;
 pub mod mqtt;
 
 #[derive(Debug, serde::Deserialize)]
-pub struct SensorReading {
+pub struct SensorReadingEvent {
     #[serde(default = "default_sensor")]
     sensor_id: String,
     #[serde(rename = "t", with = "from_string_or_float")]
@@ -19,7 +19,7 @@ pub struct SensorReading {
     timestamp: chrono::DateTime<chrono::Utc>,
 }
 
-impl std::fmt::Display for SensorReading {
+impl std::fmt::Display for SensorReadingEvent {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
             f,

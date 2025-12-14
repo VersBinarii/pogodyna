@@ -1,7 +1,7 @@
 use mqttrs::{Packet, decode_slice};
 use tracing::debug;
 
-use crate::{SensorReading, db::Repository, error::BsError};
+use crate::{SensorReadingEvent, db::Repository, error::BsError};
 
 use super::ReadLoopResult;
 
@@ -12,7 +12,7 @@ pub async fn handle_packet(
     if is_mqtt_packet(packet[0]) {
         match decode_slice(packet) {
             Ok(Some(Packet::Publish(publish))) => {
-                let sensor_reading: SensorReading =
+                let sensor_reading: SensorReadingEvent =
                     serde_json::from_slice(publish.payload)?;
                 debug!("Got update: {sensor_reading}");
                 repository

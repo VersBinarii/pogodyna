@@ -23,4 +23,5 @@ tracing-bunyan-formatter = "0.3"
 tracing-subscriber = {version = "0.3", features = ["env-filter"]}
 
 mqttrs = { git = "https://github.com/VersBinarii/mqttrs.git" }
+async-trait = "0.1.88"
 

@@ -31,7 +31,7 @@ async fn main() -> Result<(), BsError> {
 
     let broker_ip = dotenvy::var("BASE_STATION_ADDRESS")?;
     let broker_port = dotenvy::var("BASE_STATION_PORT")?;
-    let broker_addr = format!("{broker_ip}:{broker_port}").parse().unwrap();
+    let broker_addr = format!("{broker_ip}:{broker_port}");
     let sqlite_db_file = dotenvy::var("DATABASE_URL")?;
     let db_pool = SqlitePool::connect(&sqlite_db_file).await?;
 
@@ -39,17 +39,22 @@ async fn main() -> Result<(), BsError> {
 
     let repository = SqliteRepository::new(db_pool);
     let (mqtt_client, handle) =
-        MqttClient::run_forever(broker_addr, "base-station".to_string(), repository).await;
+        MqttClient::run_forever(broker_addr, "base-station".to_string(), repository.clone()).await;
 
     info!("waiting for MQTT server setup");
     mqtt_client.wait_for_server_setup().await;
 
+    let server_ip = dotenvy::var("API_SERVER_ADDRESS")?;
+    let server_port = dotenvy::var("API_SERVER_PORT")?;
+    let server_addr = format!("{server_ip}:{server_port}");
+
+    let env_api = EnvironmentApi{repository};
     let api_service =
-        OpenApiService::new(EnvironmentApi, "Environment Api", "1.0").server("http://localhost:3000");
+        OpenApiService::new(env_api, "Environment Api", "1.0");
     let ui = api_service.swagger_ui();
     let app = Route::new().nest("/", api_service).nest("/meta/swagger", ui);
 
-    Server::new(TcpListener::bind("127.0.0.1:3000"))
+    Server::new(TcpListener::bind(server_addr))
         .run(app)
         .await?;
 
